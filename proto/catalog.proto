@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+option go_package = "github.com/liuyoshio/platformd/proto/catalogv1;catalogv1";
+
+// A Service is one entry in the platform's service catalog.
+message Service {
+  string name        = 1;
+  string owner       = 2;   // team that owns it
+  string language    = 3;   // e.g. "go"
+  int32  replicas    = 4;
+}
+
+message RegisterServiceRequest { Service service = 1; }
+message RegisterServiceResponse { Service service = 1; }
+
+message GetServiceRequest  { string name = 1; }
+message GetServiceResponse { Service service = 1; }
+
+message ListServicesRequest  {}
+message ListServicesResponse { repeated Service services = 1; }
+
+import "google/api/annotations.proto";
+
+service CatalogService {
+  rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse) {
+    option (google.api.http) = { post: "/v1/services" body: "*" };
+  }
+  rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
+    option (google.api.http) = { get: "/v1/services/{name}" };
+  }
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
+    option (google.api.http) = { get: "/v1/services" };
+  }
+}

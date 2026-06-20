@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: platformd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve"]
+          ports:
+            - { name: http, containerPort: {{ .Values.service.httpPort }} }
+            - { name: grpc, containerPort: {{ .Values.service.grpcPort }} }
+          readinessProbe:
+            httpGet: { path: /v1/services, port: {{ .Values.service.httpPort }} }
+            initialDelaySeconds: 2
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
