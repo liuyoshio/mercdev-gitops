@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platformd
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/liuyoshio/mercdev-gitops.git
+    targetRevision: main
+    path: platformd-chart           # the Helm chart dir
+    helm:
+      values: |
+        replicaCount: 2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true        # delete resources removed from Git
+      selfHeal: true     # revert manual drift back to Git state
+    syncOptions:
+      - CreateNamespace=true
