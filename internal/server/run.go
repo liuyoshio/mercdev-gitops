@@ -11,21 +11,38 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/liuyoshio/platformd/internal/catalog"
+	"github.com/liuyoshio/platformd/internal/observability"
 	catalogv1 "github.com/liuyoshio/platformd/proto/catalogv1"
 )
 
-func Run(grpcPort, httpPort int, log *zap.Logger) error {
+func Run(grpcPort, httpPort int, otelEndpoint string, log *zap.Logger) error {
+	shutdownTracer, err := observability.InitTracer(context.Background(), otelEndpoint)
+	if err != nil {
+		log.Warn("tracing disabled", zap.String("endpoint", otelEndpoint), zap.Error(err))
+	} else {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := shutdownTracer(ctx); err != nil {
+				log.Warn("shutdown tracer", zap.Error(err))
+			}
+		}()
+	}
+
 	store := catalog.NewStore()
 	srv := NewCatalogServer(store)
 
 	// --- gRPC server ---
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	catalogv1.RegisterCatalogServiceServer(grpcServer, srv)
 	reflection.Register(grpcServer) // ← 加这行
 
@@ -47,7 +64,10 @@ func Run(grpcPort, httpPort int, log *zap.Logger) error {
 	mux := runtime.NewServeMux()
 	err = catalogv1.RegisterCatalogServiceHandlerFromEndpoint(
 		ctx, mux, fmt.Sprintf("localhost:%d", grpcPort),
-		[]grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
+		[]grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("register gateway: %w", err)

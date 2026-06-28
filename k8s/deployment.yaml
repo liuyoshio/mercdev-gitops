@@ -16,6 +16,9 @@ spec:
           image: platformd:dev
           imagePullPolicy: IfNotPresent   # use the locally-loaded image
           args: ["serve"]
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: jaeger.observability:4317
           ports:
             - { name: grpc, containerPort: 50051 }
             - { name: http, containerPort: 8080 }

@@ -19,6 +19,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["serve"]
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.observability.otelEndpoint | quote }}
           ports:
             - { name: http, containerPort: {{ .Values.service.httpPort }} }
             - { name: grpc, containerPort: {{ .Values.service.grpcPort }} }

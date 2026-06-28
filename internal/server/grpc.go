@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -21,7 +23,12 @@ func NewCatalogServer(store *catalog.Store) *CatalogServer {
 }
 
 func (s *CatalogServer) RegisterService(ctx context.Context, req *catalogv1.RegisterServiceRequest) (*catalogv1.RegisterServiceResponse, error) {
+	ctx, span := otel.Tracer("platformd").Start(ctx, "catalog.Register")
+	defer span.End()
+
 	in := req.GetService()
+	span.SetAttributes(attribute.String("catalog.service.name", in.GetName()))
+
 	if in.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}

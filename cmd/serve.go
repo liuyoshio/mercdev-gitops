@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 
 	"github.com/liuyoshio/platformd/internal/server"
@@ -9,6 +11,7 @@ import (
 
 var grpcPort int
 var httpPort int
+var otelEndpoint string
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -19,7 +22,15 @@ var serveCmd = &cobra.Command{
 			log, _ = zap.NewDevelopment()
 		}
 		defer log.Sync()
-		return server.Run(grpcPort, httpPort, log)
+
+		endpoint := otelEndpoint
+		if endpoint == "" {
+			endpoint = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		}
+		if endpoint == "" {
+			endpoint = "localhost:4317"
+		}
+		return server.Run(grpcPort, httpPort, endpoint, log)
 	},
 }
 
@@ -27,4 +38,5 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 	serveCmd.Flags().IntVar(&grpcPort, "grpc-port", 50051, "gRPC listen port")
 	serveCmd.Flags().IntVar(&httpPort, "http-port", 8080, "REST listen port")
+	serveCmd.Flags().StringVar(&otelEndpoint, "otel-endpoint", "", "OTLP gRPC endpoint for traces")
 }

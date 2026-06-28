@@ -9,6 +9,9 @@ service:
   httpPort: 8080
   grpcPort: 50051
 
+observability:
+  otelEndpoint: jaeger.observability:4317
+
 resources:
   requests: { cpu: 50m, memory: 64Mi }
   limits:   { cpu: 250m, memory: 128Mi }
