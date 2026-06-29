@@ -1,0 +1,29 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: platformd
+  description: Service catalog & deployment-request control-plane
+  annotations:
+    github.com/project-slug: liuyoshio/mercdev-gitops
+  tags:
+    - go
+    - grpc
+    - platform
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-platform
+  providesApis:
+    - catalog-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: catalog-api
+  description: The platformd gRPC + REST API
+spec:
+  type: grpc
+  lifecycle: experimental
+  owner: team-platform
+  definition:
+    $text: ./proto/catalog.proto
